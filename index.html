@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Economía Fantasy</title>
     <style>
         :root {
@@ -155,29 +157,37 @@
             font-size: 0.8rem;
         }
 
+        /* Estilos de estadísticas ajustados para dispositivos móviles */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
         }
 
         .stat-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 10px;
-            padding: 0.85rem 1rem;
+            padding: 0.75rem 0.5rem;
+            overflow: hidden;
         }
 
         .stat-card span {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             display: block;
             margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-card h2 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .tables-row {
@@ -297,19 +307,17 @@
 <div class="container">
     <header>
         <h1>⚽ Economía Fantasy</h1>
-        <button type="button" class="btn-backup" onclick="exportarDatos()">📥 Obtener Código Exportar</button>
+        <button type="button" class="btn-backup" onclick="exportarDatos()">📥 Código Exportar</button>
     </header>
 
-    <!-- Importación -->
     <div class="card import-box">
         <label for="directImportText">📤 Cargar/Importar Datos (Pegar código aquí):</label>
         <div class="import-row">
-            <textarea id="directImportText" placeholder="Pega aquí el código copiado de la PC..."></textarea>
+            <textarea id="directImportText" placeholder="Pega aquí el código..."></textarea>
             <button type="button" class="btn-add" onclick="procesarImportacion()">Cargar Datos</button>
         </div>
     </div>
 
-    <!-- Agregar Jugador -->
     <div class="card">
         <div class="form-grid">
             <div class="form-group">
@@ -399,7 +407,6 @@
     </div>
 </div>
 
-<!-- Modal Exportar -->
 <div id="modalExport" class="modal-overlay">
     <div class="modal-card">
         <h3>Código de Datos Exportados</h3>
@@ -410,7 +417,6 @@
     </div>
 </div>
 
-<!-- Modal Venta -->
 <div id="modalVenta" class="modal-overlay">
     <div class="modal-card">
         <h3 id="tituloVenta">Vender Jugador</h3>
@@ -426,7 +432,6 @@
 <script>
     let operaciones = [];
 
-    // Cargar datos guardados
     try {
         const guardados = localStorage.getItem('operacionesFantasy');
         if (guardados) {
@@ -472,7 +477,7 @@
         const compraInput = document.getElementById('compra').value;
 
         if (!nombreInput || !compraInput) {
-            alert("Por favor completa al menos el nombre y el precio de compra.");
+            alert("Completa al menos el nombre y el precio de compra.");
             return;
         }
 
@@ -518,7 +523,7 @@
                 alert("El código no tiene un formato válido.");
             }
         } catch(err) {
-            alert("Error al leer el código JSON.");
+            alert("Error al leer el código.");
         }
     }
 
@@ -651,7 +656,6 @@
         document.getElementById('totalPerdidas').textContent = contadorPerdidas;
     }
 
-    // Cargar la vista al iniciar
     actualizarInterfaz();
 </script>
 
