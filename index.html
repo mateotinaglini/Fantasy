@@ -157,7 +157,6 @@
             font-size: 0.8rem;
         }
 
-        /* Estilos de estadísticas ajustados para dispositivos móviles */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -234,6 +233,16 @@
 
         .btn-sell {
             background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.35rem 0.65rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .btn-clause {
+            background-color: #8b5cf6;
             color: white;
             border: none;
             padding: 0.35rem 0.65rem;
@@ -429,6 +438,18 @@
     </div>
 </div>
 
+<div id="modalClausula" class="modal-overlay">
+    <div class="modal-card">
+        <h3 id="tituloClausula">Aumentar Cláusula</h3>
+        <input type="hidden" id="idJugadorClausula">
+        <input type="text" id="montoClausulaInput" placeholder="Monto a sumar (Ej. 500k o 0.5m)">
+        <div class="actions" style="justify-content: flex-end;">
+            <button type="button" class="btn-clear" onclick="cerrarModales()">Cancelar</button>
+            <button type="button" class="btn-clause" onclick="guardarClausulaExtra()">Sumar Cláusula</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let operaciones = [];
 
@@ -556,6 +577,38 @@
         document.getElementById('modalVenta').style.display = 'flex';
     }
 
+    function abrirModalClausula(id) {
+        const operacion = operaciones.find(op => op.id === id);
+        if (!operacion) return;
+
+        document.getElementById('idJugadorClausula').value = id;
+        document.getElementById('tituloClausula').textContent = 'Sumar cláusula a ' + operacion.nombre;
+        document.getElementById('montoClausulaInput').value = '';
+        document.getElementById('modalClausula').style.display = 'flex';
+    }
+
+    function guardarClausulaExtra() {
+        const id = parseInt(document.getElementById('idJugadorClausula').value);
+        const clausulaExtra = parsearMonto(document.getElementById('montoClausulaInput').value);
+
+        if (clausulaExtra <= 0) {
+            alert("Ingresa un monto válido para la cláusula.");
+            return;
+        }
+
+        const operacion = operaciones.find(op => op.id === id);
+        if (operacion) {
+            operacion.clausula += clausulaExtra;
+            operacion.inversion = operacion.compra + operacion.clausula;
+            if (operacion.venta > 0) {
+                operacion.resultado = operacion.venta - operacion.inversion;
+            }
+            guardarEnLocalStorage();
+            actualizarInterfaz();
+        }
+        cerrarModales();
+    }
+
     function eliminarOperacion(id) {
         operaciones = operaciones.filter(op => op.id !== id);
         guardarEnLocalStorage();
@@ -584,6 +637,7 @@
     function cerrarModales() {
         document.getElementById('modalExport').style.display = 'none';
         document.getElementById('modalVenta').style.display = 'none';
+        document.getElementById('modalClausula').style.display = 'none';
     }
 
     function actualizarInterfaz() {
@@ -597,12 +651,22 @@
         let totalRecuperado = 0;
         let contadorGanancias = 0;
         let contadorPerdidas = 0;
-        let hayPlantilla = false;
-        let hayVendidos = false;
 
-        operaciones.forEach(op => {
-            if (op.venta === 0) {
-                hayPlantilla = true;
+        // Separar plantilla y vendidos
+        const plantilla = operaciones.filter(op => op.venta === 0);
+        const vendidos = operaciones.filter(op => op.venta > 0);
+
+        // Ordenar plantilla de mayor a menor costo actual (inversion)
+        plantilla.sort((a, b) => b.inversion - a.inversion);
+
+        // Ordenar vendidos de mayor a menor resultado (ganancia)
+        vendidos.sort((a, b) => b.resultado - a.resultado);
+
+        // Renderizar Plantilla
+        if (plantilla.length === 0) {
+            tbodyPlantilla.innerHTML = '<tr><td colspan="5" class="empty-msg">No hay jugadores en plantilla.</td></tr>';
+        } else {
+            plantilla.forEach(op => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${op.nombre}</strong></td>
@@ -611,14 +675,21 @@
                     <td><strong>${formatearMoneda(op.inversion)}</strong></td>
                     <td>
                         <div class="action-cell">
+                            <button type="button" class="btn-clause" onclick="abrirModalClausula(${op.id})">+ Cláusula</button>
                             <button type="button" class="btn-sell" onclick="abrirModalVenta(${op.id})">Vender</button>
                             <button type="button" class="btn-delete" onclick="eliminarOperacion(${op.id})">✕</button>
                         </div>
                     </td>
                 `;
                 tbodyPlantilla.appendChild(tr);
-            } else {
-                hayVendidos = true;
+            });
+        }
+
+        // Renderizar Vendidos
+        if (vendidos.length === 0) {
+            tbodyVendidos.innerHTML = '<tr><td colspan="7" class="empty-msg">No hay jugadores vendidos.</td></tr>';
+        } else {
+            vendidos.forEach(op => {
                 totalInversion += op.inversion;
                 totalRecuperado += op.venta;
 
@@ -638,11 +709,8 @@
                     <td><button type="button" class="btn-delete" onclick="eliminarOperacion(${op.id})">✕</button></td>
                 `;
                 tbodyVendidos.appendChild(tr);
-            }
-        });
-
-        if (!hayPlantilla) tbodyPlantilla.innerHTML = '<tr><td colspan="5" class="empty-msg">No hay jugadores en plantilla.</td></tr>';
-        if (!hayVendidos) tbodyVendidos.innerHTML = '<tr><td colspan="7" class="empty-msg">No hay jugadores vendidos.</td></tr>';
+            });
+        }
 
         const totalResultado = totalRecuperado - totalInversion;
         document.getElementById('totalInversion').textContent = formatearMoneda(totalInversion);
